@@ -1,0 +1,24 @@
+# --- Build artifacts ---
+*.o
+*.bin
+*.elf
+*.elf.txt
+*.map
+
+# --- Provided course libraries / binaries ---
+boot.*
+dtekv-lib.*
+softfloat.a
+dtekv-script.lds
+Makefile
+
+# --- Temporary or editor files ---
+*.swp
+*.bak
+*.tmp
+*.log
+
+# --- IDE-specific ---
+.vscode/
+.idea/
+
