@@ -88,7 +88,7 @@ void draw_grid (unsigned char red,
  * This function draws an X game piece in the given grid coordinates
  * and given 8-bit RGB color.
  */
-void draw_X(int row, int column, unsigned char red, 
+void draw_X(int column, int row, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
     int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
@@ -116,7 +116,7 @@ void draw_X(int row, int column, unsigned char red,
  * This function draws an O game piece in the given grid coordinates
  * and given 8-bit RGB color.
  */
-void draw_O(int row, int column, unsigned char red, 
+void draw_O(int column, int row, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
     int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
@@ -144,7 +144,7 @@ void draw_O(int row, int column, unsigned char red,
 }
 
 //main for testing purposes
-/*
+
 int main(int argc, char const *argv[])
 {
     draw_init();
@@ -152,11 +152,14 @@ int main(int argc, char const *argv[])
     draw_grid(7,7,3);
 
     draw_X(0, 0, 0, 0, 3);
-    draw_O(1, 1, 7, 0, 0);
+    draw_X(1, 1, 0, 0, 3);
+    draw_X(2, 2, 0, 0, 3);
+    draw_O(0, 1, 7, 0, 0);
+    draw_O(0, 2, 7, 0, 0);
 
 
     while(1){};
-}*/
+}
 
 void handle_interrupt()
 {}
