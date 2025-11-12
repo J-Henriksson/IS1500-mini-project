@@ -11,6 +11,7 @@ dtekv-lib.*
 softfloat.a
 dtekv-script.lds
 Makefile
+COPYING
 
 # --- Temporary or editor files ---
 *.swp
