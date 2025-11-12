@@ -79,8 +79,8 @@ void draw_grid (unsigned char red,
 /**
  * @brief Draw a X-peice on the board
  *
- * @param row    row coordinate (0–2)
  * @param column column coordinate (0–2)
+ * @param row    row coordinate (0–2)
  * @param red    Red component (0–7)
  * @param green  Green component (0–7)
  * @param blue   Blue component (0–3)
@@ -107,8 +107,8 @@ void draw_X(int column, int row, unsigned char red,
 /**
  * @brief Draw a O-peice on the board
  *
- * @param row    row coordinate (0–2)
  * @param column column coordinate (0–2)
+ * @param row    row coordinate (0–2)
  * @param red    Red component (0–7)
  * @param green  Green component (0–7)
  * @param blue   Blue component (0–3)
@@ -135,16 +135,44 @@ void draw_O(int column, int row, unsigned char red,
             if (distance2 >= (radius-1)*(radius-1) && distance2 <= (radius+1)*(radius+1))
             {
                 draw_pixel(center_x + x, center_y + y, red, green, blue);
-            }
-            
+            } 
         }
-        
     }
-    
+}
+
+/**
+ * @brief Draw a square around a cell on the board
+ *
+ * @param column column coordinate (0–2)
+ * @param row    row coordinate (0–2)
+ * @param red    Red component (0–7)
+ * @param green  Green component (0–7)
+ * @param blue   Blue component (0–3)
+ *
+ * This function draws an square around the cell in the given grid coordinates
+ * and given 8-bit RGB color.
+ */
+void draw_square(int column, int row, unsigned char red, 
+    unsigned char green, unsigned char blue)
+{
+    int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
+    int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
+
+    for (int y = 0; y < CELL_SIZE; y++)
+    {
+        draw_pixel(cell_x, (cell_y + y), 0, 7, 0);
+        draw_pixel((cell_x + CELL_SIZE - 1), (cell_y+y), red, green, blue);
+    }
+
+    for (int x = 0; x < CELL_SIZE; x++)
+    {
+        draw_pixel((cell_x + x), cell_y, 0, 7, 0);
+        draw_pixel((cell_x + x), (cell_y + CELL_SIZE -1), red, green, blue);
+    }
 }
 
 //main for testing purposes
-
+/*
 int main(int argc, char const *argv[])
 {
     draw_init();
@@ -157,9 +185,12 @@ int main(int argc, char const *argv[])
     draw_O(0, 1, 7, 0, 0);
     draw_O(0, 2, 7, 0, 0);
 
+    draw_square(0, 0, 0, 7, 0);
+
 
     while(1){};
 }
+*/
 
 void handle_interrupt()
 {}
