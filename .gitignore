@@ -6,7 +6,6 @@
 *.map
 
 # --- Provided course libraries / binaries ---
-boot.*
 dtekv-lib.*
 softfloat.a
 dtekv-script.lds

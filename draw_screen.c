@@ -1,7 +1,7 @@
 /*
  * File:        draw_screen.c
  * Author:      Viktor Eriksson
- * Last Edited: 2025-11-11
+ * Last Edited: 2025-11-21
  *
  * Description:
  *     Handles all VGA draw operations for the tic-tac-toe game.
@@ -191,6 +191,3 @@ int main(int argc, char const *argv[])
     while(1){};
 }
 */
-
-void handle_interrupt()
-{}
