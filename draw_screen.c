@@ -10,8 +10,19 @@
  *     Uses 8-bit RGB (3-3-2) color encoding.
  */
 
-volatile char *VGA = (volatile char *) 0x08000000; //address to VGA screen buffer
+extern void print(const char*);
+extern void print_dec(unsigned int);
+void print_hex32 ( unsigned int);
 
+//VGA control registers
+volatile unsigned int* VGA_buffer = (volatile unsigned int*) 0x04000100;
+volatile unsigned int* VGA_backbuffer = (volatile unsigned int*) 0x04000104;
+volatile unsigned int* VGA_status = (volatile unsigned int*) 0x0400010C;
+
+//VGA screen_buffer base
+#define VGA_BASE 0x08000000
+
+//game constants
 #define CELL_SIZE       51
 #define SCREEN_WIDTH    320
 #define SCREEN_HEIGHT   240
@@ -25,6 +36,18 @@ void draw_init()
 {
      BOARD_OFFSET_X = (SCREEN_WIDTH - (CELL_SIZE*3 + 2*LINE_WIDTH))/2;
      BOARD_OFFSET_Y = (SCREEN_HEIGHT - (CELL_SIZE*3 + 2*LINE_WIDTH))/2;
+
+     *VGA_backbuffer = VGA_BASE + SCREEN_WIDTH * SCREEN_HEIGHT;
+
+    print_hex32(*VGA_buffer);
+    print("\n");
+    print_hex32(*VGA_backbuffer);
+    print("\n\n"); 
+}
+
+void swap_buffers()
+{  
+    *VGA_buffer = 0x1;
 }
 
 /**
@@ -39,11 +62,25 @@ void draw_init()
  * This function writes an 8-bit RGB-332 encoded color value
  * directly to the VGA screen buffer.
  */ 
-void draw_pixel (int x, int y, unsigned char red, 
+void draw_pixel(int x, int y, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
+    volatile char* framebuffer = (volatile char*)(*VGA_backbuffer);
+
     unsigned char rgb = (red << 5) + (green << 2) + blue;
-    VGA[x +320*y] = rgb;
+    framebuffer[x +320*y] = rgb;
+}
+
+/**
+ * @brief clears the screen.
+ *
+ * Clears the screen by filling the screen with black
+ */ 
+void clear_screen()
+{
+    volatile char *framebuffer = (volatile char*)(*VGA_backbuffer);
+    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
+        framebuffer[i] = 0; 
 }
 
 /**
@@ -55,7 +92,7 @@ void draw_pixel (int x, int y, unsigned char red,
  *
  * This function draws the game grid in the given 8-bit RGB color.
  */ 
-void draw_grid (unsigned char red, 
+void draw_grid(unsigned char red, 
     unsigned char green, unsigned char blue)
 {
     //vertical lines
