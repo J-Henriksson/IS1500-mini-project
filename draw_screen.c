@@ -1,7 +1,7 @@
 /*
  * File:        draw_screen.c
  * Author:      Viktor Eriksson
- * Last Edited: 2025-11-21
+ * Last Edited: 2025-12-03
  *
  * Description:
  *     Handles all VGA draw operations for the tic-tac-toe game.
@@ -14,10 +14,9 @@ extern void print(const char*);
 extern void print_dec(unsigned int);
 void print_hex32 ( unsigned int);
 
-//VGA control registers
-volatile unsigned int* VGA_buffer = (volatile unsigned int*) 0x04000100;
-volatile unsigned int* VGA_backbuffer = (volatile unsigned int*) 0x04000104;
-volatile unsigned int* VGA_status = (volatile unsigned int*) 0x0400010C;
+//VGA 
+volatile unsigned char* VGA = (volatile unsigned char*) 0x08000000;
+
 
 //VGA screen_buffer base
 #define VGA_BASE 0x08000000
@@ -27,27 +26,18 @@ volatile unsigned int* VGA_status = (volatile unsigned int*) 0x0400010C;
 #define SCREEN_WIDTH    320
 #define SCREEN_HEIGHT   240
 #define LINE_WIDTH      1
+#define TURN_INDICATOR_SIZE 31
+#define TURN_INDICATOR_OFFSET 20
 
 //runtime calculated constants (see draw_init())
 int BOARD_OFFSET_X;
 int BOARD_OFFSET_Y;
 
+//calculate run-time constants
 void draw_init()
 {
      BOARD_OFFSET_X = (SCREEN_WIDTH - (CELL_SIZE*3 + 2*LINE_WIDTH))/2;
      BOARD_OFFSET_Y = (SCREEN_HEIGHT - (CELL_SIZE*3 + 2*LINE_WIDTH))/2;
-
-     *VGA_backbuffer = VGA_BASE + SCREEN_WIDTH * SCREEN_HEIGHT;
-
-    print_hex32(*VGA_buffer);
-    print("\n");
-    print_hex32(*VGA_backbuffer);
-    print("\n\n"); 
-}
-
-void swap_buffers()
-{  
-    *VGA_buffer = 0x1;
 }
 
 /**
@@ -65,10 +55,8 @@ void swap_buffers()
 void draw_pixel(int x, int y, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
-    volatile char* framebuffer = (volatile char*)(*VGA_backbuffer);
-
     unsigned char rgb = (red << 5) + (green << 2) + blue;
-    framebuffer[x +320*y] = rgb;
+    VGA[x +320*y] = rgb;
 }
 
 /**
@@ -78,9 +66,8 @@ void draw_pixel(int x, int y, unsigned char red,
  */ 
 void clear_screen()
 {
-    volatile char *framebuffer = (volatile char*)(*VGA_backbuffer);
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
-        framebuffer[i] = 0; 
+        VGA[i] = 0; 
 }
 
 /**
@@ -113,55 +100,50 @@ void draw_grid(unsigned char red,
         }
     }
 }
+
 /**
- * @brief Draw a X-peice on the board
+ * @brief Draw an X on the board
  *
- * @param column column coordinate (0–2)
- * @param row    row coordinate (0–2)
- * @param red    Red component (0–7)
- * @param green  Green component (0–7)
- * @param blue   Blue component (0–3)
+ * @param start_x   x_coordinate
+ * @param start_y   row coordinate (0–2)
+ * @param red       Red component (0–7)
+ * @param green     Green component (0–7)
+ * @param blue      Blue component (0–3)
  *
- * This function draws an X game piece in the given grid coordinates
- * and given 8-bit RGB color.
+ * This function draws an X on the board with the given size and the given (x,y) position 
+ * as the top left corner in the given 8-bit RGB color.
  */
-void draw_X(int column, int row, unsigned char red, 
+void draw_X(int start_x, int start_y, int size, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
-    int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
-    int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
-
-    for (int i = 5; i < (CELL_SIZE - 5); i++)
+    for (int i = 5; i < (size - 5); i++)
     {
         for (int j = -1; j < 2; j++)
         {
-            draw_pixel((cell_x+j) + i, cell_y + i, red, green, blue);
-            draw_pixel((cell_x+j) + i, cell_y + (CELL_SIZE - i - 1), red, green, blue);   
+            draw_pixel((start_x+j) + i, start_y + i, red, green, blue);
+            draw_pixel((start_x+j) + i, start_y + (size - i - 1), red, green, blue);   
         }
     }
 }
 
 /**
- * @brief Draw a O-peice on the board
+ * @brief Draw an O on the board
  *
- * @param column column coordinate (0–2)
- * @param row    row coordinate (0–2)
- * @param red    Red component (0–7)
- * @param green  Green component (0–7)
- * @param blue   Blue component (0–3)
+ * @param start_x   x_coordinate
+ * @param start_y   row coordinate (0–2)
+ * @param red       Red component (0–7)
+ * @param green     Green component (0–7)
+ * @param blue      Blue component (0–3)
  *
- * This function draws an O game piece in the given grid coordinates
- * and given 8-bit RGB color.
+ * This function draws an O on the board with the given size and the given (x,y) position 
+ * as the top left corner in the given 8-bit RGB color.
  */
-void draw_O(int column, int row, unsigned char red, 
+void draw_O(int start_x, int start_y, int size, unsigned char red, 
     unsigned char green, unsigned char blue)
 {
-    int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
-    int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
-    
-    int center_x = cell_x + CELL_SIZE/2;
-    int center_y = cell_y + CELL_SIZE/2;
-    int radius = CELL_SIZE/2 - 5;
+    int center_x = start_x + size/2;
+    int center_y = start_y + size/2;
+    int radius = size/2 - 5;
 
     for (int x = -radius; x <= radius; x++)
     {
@@ -178,33 +160,99 @@ void draw_O(int column, int row, unsigned char red,
 }
 
 /**
- * @brief Draw a square around a cell on the board
+ * @brief Draw a square on the board
  *
- * @param column column coordinate (0–2)
- * @param row    row coordinate (0–2)
+ * @param start_x x_coordinate
+ * @param start_y   row coordinate (0–2)
  * @param red    Red component (0–7)
  * @param green  Green component (0–7)
  * @param blue   Blue component (0–3)
  *
- * This function draws an square around the cell in the given grid coordinates
- * and given 8-bit RGB color.
+ * This function draws a square on the board with the given size and the given (x,y) position 
+ * as the top left corner in the given 8-bit RGB color.
  */
-void draw_square(int column, int row, unsigned char red, 
+ void draw_square(int start_x, int start_y,int size, unsigned char red, 
     unsigned char green, unsigned char blue)
+{
+    for (int y = 0; y < size; y++)
+    {
+        draw_pixel(start_x, (start_y + y), red, green, blue);
+        draw_pixel((start_x + size - 1), (start_y +y), red, green, blue);
+    }
+
+    for (int x = 0; x < size; x++)
+    {
+        draw_pixel((start_x + x), start_y, red, green, blue);
+        draw_pixel((start_x + x), (start_y + size -1), red, green, blue);
+    }
+}
+
+void draw_cursor(int column, int row)
 {
     int cell_x = BOARD_OFFSET_X + column*(CELL_SIZE + LINE_WIDTH);
     int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
 
-    for (int y = 0; y < CELL_SIZE; y++)
-    {
-        draw_pixel(cell_x, (cell_y + y), 0, 7, 0);
-        draw_pixel((cell_x + CELL_SIZE - 1), (cell_y+y), red, green, blue);
-    }
+    draw_square(cell_x, cell_y, CELL_SIZE, 0, 7, 0);
+}
 
-    for (int x = 0; x < CELL_SIZE; x++)
+/**
+ * @brief Draws a marker indicating the turn
+ *
+ * @param player the turn to display (1 or 2)
+ *
+ * This function draws a small square containing the symbol of the current player to indicate
+ * who's turn it is.
+ */
+void draw_turn_indicator(int player)
+{
+    draw_square(TURN_INDICATOR_OFFSET, TURN_INDICATOR_OFFSET, TURN_INDICATOR_SIZE, 7, 7, 3);
+    if (player == 1)
     {
-        draw_pixel((cell_x + x), cell_y, 0, 7, 0);
-        draw_pixel((cell_x + x), (cell_y + CELL_SIZE -1), red, green, blue);
+        draw_X(TURN_INDICATOR_OFFSET, TURN_INDICATOR_OFFSET, TURN_INDICATOR_SIZE, 0, 0, 3);
+    }
+    else
+    {
+         draw_O(TURN_INDICATOR_OFFSET, TURN_INDICATOR_OFFSET, TURN_INDICATOR_SIZE, 7, 0, 0);
+    }
+}
+
+
+
+/**
+ * @brief Draw a the game pieces on the board
+ *
+ * @param board 3x3 array of the board
+ * @param draw if 1, all pieces will be drawn white
+ *
+ * This function draws game pieces on the board based on a 3x3 array representing the board
+ * if it's a draw, all pieces will be white.
+ */
+void draw_pieces(int board[3][3], int draw)
+{
+    for (int row = 0; row < 3; row++)
+    {
+        for (int col = 0; col < 3; col++)
+        {
+            int cell_x = BOARD_OFFSET_X + col*(CELL_SIZE + LINE_WIDTH);
+            int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
+
+            int cell = board[row][col];
+
+            if (cell == 1)  // PLAYER_X
+            {
+                if (draw)
+                    draw_X(cell_x, cell_y, CELL_SIZE, 7, 7, 3); 
+                else 
+                draw_X(cell_x, cell_y, CELL_SIZE, 0, 0, 3);  
+            }
+            else if (cell == 2)  // PLAYER_O
+            {
+                if (draw)
+                    draw_O(cell_x, cell_y, CELL_SIZE, 7, 7, 3);  
+                else
+                    draw_O(cell_x, cell_y, CELL_SIZE, 7, 0, 0);  
+            }
+        }
     }
 }
 
