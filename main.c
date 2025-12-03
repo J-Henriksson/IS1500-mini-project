@@ -14,14 +14,10 @@ extern void _enable_interrupt();
 extern void print(const char*);
 extern void print_dec(unsigned int);
 
-extern void draw_init();   // draw_screen.c
+extern void draw_init();    // draw_screen.c
 extern void clear_screen(); // draw_screen.c
 extern void swap_buffers(); // draw_screen.c
 extern void draw_grid (unsigned char red, 
-    unsigned char green, unsigned char blue); // draw_screen.c
-extern void draw_X(int x, int y, unsigned char red, 
-    unsigned char green, unsigned char blue); // draw_screen.c
-extern void draw_O(int x, int y, unsigned char red, 
     unsigned char green, unsigned char blue); // draw_screen.c
 extern void draw_square(int column, int row, unsigned char red, 
     unsigned char green, unsigned char blue); // draw_screen.c
@@ -175,27 +171,6 @@ int check_winner(void)
     return 0;            // game continues
 }
 
-// Draw all placed pieces from the board[][]
-void draw_board(void)
-{
-    for (int row = 0; row < 3; row++)
-    {
-        for (int col = 0; col < 3; col++)
-        {
-            if (board[row][col] == PLAYER_X)
-            {
-                // X is blue
-                draw_X(col, row, 0, 0, 3);
-            }
-            else if (board[row][col] == PLAYER_O)
-            {
-                // O is red
-                draw_O(col, row, 7, 0, 0);
-            }
-        }
-    }
-}
-
 // Main + interrupt logic
 
 int main(int argc, char const *argv[])
@@ -203,10 +178,9 @@ int main(int argc, char const *argv[])
     // Initialize drawing and game state *before* enabling interrupts
     draw_init();
     game_init();
-    draw_grid(7, 7, 3);    // initial grid (will be redrawn each tick anyway)
+    draw_grid(7, 7, 3);    // initial grid
 
-    // Enable timer + interrupts last, to avoid using
-    // uninitialized game state in the ISR.
+    // Enable timer + interrupts last
     timer_init();
 
     while(1) {}
@@ -224,10 +198,9 @@ void handle_interrupt()
     // Swap front/back buffers
     swap_buffers();
 
-    // Redraw everything into the backbuffer
     clear_screen();
     draw_grid(7, 7, 3);
-    draw_board();  // draw all X/O pieces
+
 
     int x = 0;
     int y = 0;
@@ -243,10 +216,9 @@ void handle_interrupt()
             // green selection square
             draw_square(x, y, 0, 7, 0);
 
-            // If button was pressed & cell is empty -> place piece
             if (pressed && board[y][x] == EMPTY)
             {
-                board[y][x] = current_player;
+                board[y][x] = current_player;  
 
                 int result = check_winner();
                 if (result != 0)
@@ -254,10 +226,6 @@ void handle_interrupt()
                     // Game finished
                     game_over = 1;
                     winner = result;
-
-                    // Optional: you could add some special drawing here,
-                    // e.g. change color of the grid, blink, etc.
-                    // (We avoid calling print() here since this is an ISR.)
                 }
                 else
                 {
