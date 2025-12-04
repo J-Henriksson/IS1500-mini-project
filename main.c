@@ -40,7 +40,7 @@ volatile unsigned char* seven_seg_base = (volatile unsigned char*) 0x04000050;
 // board[row][col], where row = x (0–2), col = y (0–2)
 int board[3][3];
 int win_cells[3][3];
-int current_player;;
+int current_player = PLAYER_O;
 int winner;     // 0 = none, 1 = X, 2 = O, 3 = draw
 int X_score = 0;
 int O_score = 0;
@@ -82,6 +82,15 @@ void switch_position(int* col, int* row)
     else                      *row = -1; // invalid
 }
 
+//switches the turn to the other player
+void switch_player()
+{
+    if (current_player == PLAYER_X)
+        current_player = PLAYER_O;
+    else
+    current_player = PLAYER_X;
+}
+
 // Initialize / reset the game state
 
 void game_init(void)
@@ -93,8 +102,8 @@ void game_init(void)
             board[r][c] = EMPTY;
         }
     }
+    switch_player();
 
-    current_player = PLAYER_X;
     winner = 0;
 }
 
@@ -255,11 +264,7 @@ int main(int argc, char const *argv[])
                     winner = check_winner();
                     if (winner == 0)
                     {
-                        // Switch player
-                        if (current_player == PLAYER_X)
-                            current_player = PLAYER_O;
-                        else
-                            current_player = PLAYER_X;
+                       switch_player();
                     }
                     else if (winner == 1)
                         X_score++;
