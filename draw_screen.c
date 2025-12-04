@@ -1,7 +1,7 @@
 /*
  * File:        draw_screen.c
  * Author:      Viktor Eriksson
- * Last Edited: 2025-12-03
+ * Last Edited: 2025-12-04
  *
  * Description:
  *     Handles all VGA draw operations for the tic-tac-toe game.
@@ -222,32 +222,33 @@ void draw_turn_indicator(int player)
  * @brief Draw a the game pieces on the board
  *
  * @param board 3x3 array of the board
- * @param draw if 1, all pieces will be drawn white
+ * @param win_cells 3x3 array containing the cells involved in a win
+ * @param winner 0 = no winner, 1 or 2 is the winning player and 3 is a draw
  *
  * This function draws game pieces on the board based on a 3x3 array representing the board
- * if it's a draw, all pieces will be white.
+ * if it's a draw, all pieces will be white,
  */
-void draw_pieces(int board[3][3], int draw)
+void draw_pieces(int board[3][3], int win_cells[3][3], int winner)
 {
-    for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 3; col++)
     {
-        for (int col = 0; col < 3; col++)
+        for (int row = 0; row < 3; row++)
         {
             int cell_x = BOARD_OFFSET_X + col*(CELL_SIZE + LINE_WIDTH);
             int cell_y = BOARD_OFFSET_Y + row*(CELL_SIZE + LINE_WIDTH);
 
-            int cell = board[row][col];
+            int cell = board[col][row];
 
             if (cell == 1)  // PLAYER_X
             {
-                if (draw)
+                if ((winner && win_cells[col][row] != 1))
                     draw_X(cell_x, cell_y, CELL_SIZE, 7, 7, 3); 
                 else 
                 draw_X(cell_x, cell_y, CELL_SIZE, 0, 0, 3);  
             }
             else if (cell == 2)  // PLAYER_O
             {
-                if (draw)
+                if (winner && win_cells[col][row] != 2)
                     draw_O(cell_x, cell_y, CELL_SIZE, 7, 7, 3);  
                 else
                     draw_O(cell_x, cell_y, CELL_SIZE, 7, 0, 0);  
