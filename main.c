@@ -28,18 +28,22 @@ volatile unsigned int* button = (volatile unsigned int*) 0x040000D0;
 // switches register
 volatile unsigned int* switches = (volatile unsigned int*) 0x04000010;
 
-// Game state
+//seven segment display numbers and base adress
+static const int seven_seg_digits[10] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8, 0x80, 0x90};
+volatile unsigned char* seven_seg_base = (volatile unsigned char*) 0x04000050;
 
+// Game state
 #define EMPTY    0
 #define PLAYER_X 1
 #define PLAYER_O 2
 
-// board[row][col], where row = y (0–2), col = x (0–2)
+// board[row][col], where row = x (0–2), col = y (0–2)
 int board[3][3];
 int win_cells[3][3];
-int current_player = PLAYER_X;
-int game_over = 0;  // 0 = playing, 1 = finished
-int winner = 0;     // 0 = none, 1 = X, 2 = O, 3 = draw
+int current_player;;
+int winner;     // 0 = none, 1 = X, 2 = O, 3 = draw
+int X_score = 0;
+int O_score = 0;
 
 
 // Rising-edge detector on button 0
@@ -195,12 +199,30 @@ void update_screen(int col, int row)
     
 }
 
+//set a display to the given number (-1 turn the display off)
+void set_displays(int display_number, int value) 
+{
+    if (display_number > -1 && display_number < 6) 
+    {
+        volatile char* address = (volatile char*) (seven_seg_base + (display_number * 0x10));
+        if (value == -1)
+            *address = 0xFF;
+        else
+            *address = seven_seg_digits[value];
+    }
+  
+}
+
 // Main game loop
 int main(int argc, char const *argv[])
 {
     // Initialize drawing and game state
     draw_init();
     game_init();
+
+    //turn middle displays off
+    set_displays(2, -1);
+    set_displays(3, -1);
 
     int col = 0;
     int row = 0;
@@ -239,6 +261,14 @@ int main(int argc, char const *argv[])
                         else
                             current_player = PLAYER_X;
                     }
+                    else if (winner == 1)
+                        X_score++;
+                    else if (winner == 2)
+                        O_score++;
+                       
+                
+                    
+
                     state_updated = 1;
                 }
             }
@@ -254,7 +284,18 @@ int main(int argc, char const *argv[])
         }
 
         //redraw the screen when game state has been updated
-        if (state_updated) update_screen(col, row);
+        if (state_updated) 
+        {
+            update_screen(col, row);
+
+            set_displays(0, O_score%10);
+            set_displays(1, O_score/10);
+
+            set_displays(4, X_score%10);
+            set_displays(5, X_score/10);
+            
+        }
+        
     }
 }
 
