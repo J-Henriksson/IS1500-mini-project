@@ -9,14 +9,12 @@
  * Notes:
  *     Uses 8-bit RGB (3-3-2) color encoding.
  */
-
 extern void print(const char*);
 extern void print_dec(unsigned int);
 void print_hex32 ( unsigned int);
 
 //VGA 
 volatile unsigned char* VGA = (volatile unsigned char*) 0x08000000;
-
 
 //VGA screen_buffer base
 #define VGA_BASE 0x08000000
@@ -226,7 +224,8 @@ void draw_turn_indicator(int player)
  * @param winner 0 = no winner, 1 or 2 is the winning player and 3 is a draw
  *
  * This function draws game pieces on the board based on a 3x3 array representing the board
- * if it's a draw, all pieces will be white,
+ * if the game is over, some pieces will be drawn white to show the winner
+ * if it's a draw all pieces will be white
  */
 void draw_pieces(int board[3][3], int win_cells[3][3], int winner)
 {
@@ -256,24 +255,3 @@ void draw_pieces(int board[3][3], int win_cells[3][3], int winner)
         }
     }
 }
-
-//main for testing purposes
-/*
-int main(int argc, char const *argv[])
-{
-    draw_init();
-
-    draw_grid(7,7,3);
-
-    draw_X(0, 0, 0, 0, 3);
-    draw_X(1, 1, 0, 0, 3);
-    draw_X(2, 2, 0, 0, 3);
-    draw_O(0, 1, 7, 0, 0);
-    draw_O(0, 2, 7, 0, 0);
-
-    draw_square(0, 0, 0, 7, 0);
-
-
-    while(1){};
-}
-*/

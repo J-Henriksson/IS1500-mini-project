@@ -1,2 +1,0 @@
-# dtek-mini-project
-

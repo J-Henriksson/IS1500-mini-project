@@ -10,6 +10,7 @@
  *     Each "tick" is activated by an interrupt from the hardware timer.
  */
 
+//external functions
 extern void print(const char*);
 extern void print_dec(unsigned int);
 extern void draw_init();    // draw_screen.c
@@ -37,16 +38,16 @@ volatile unsigned char* seven_seg_base = (volatile unsigned char*) 0x04000050;
 #define PLAYER_X 1
 #define PLAYER_O 2
 
-// board[row][col], where row = x (0–2), col = y (0–2)
+// board[col][row], where col = x (0–2), row = y (0–2)
 int board[3][3];
-int win_cells[3][3];
+int win_cells[3][3]; // tracks cells involved in a win
 int current_player = PLAYER_O;
 int winner;     // 0 = none, 1 = X, 2 = O, 3 = draw
 int X_score = 0;
 int O_score = 0;
 
 
-// Rising-edge detector on button 0
+// Rising-edge detector on button 1
 int button_press()
 {
     static int button_pressed = 0;
@@ -209,7 +210,7 @@ void update_screen(int col, int row)
 }
 
 //set a display to the given number (-1 turn the display off)
-void set_displays(int display_number, int value) 
+void set_display(int display_number, int value) 
 {
     if (display_number > -1 && display_number < 6) 
     {
@@ -229,9 +230,10 @@ int main(int argc, char const *argv[])
     draw_init();
     game_init();
 
-    //turn middle displays off
-    set_displays(2, -1);
-    set_displays(3, -1);
+    //turn middle 7-seg displays (2 and 3) off, set the others to 0
+    int initial_values[6] = {0, 0, -1, -1, 0, 0};
+    for (int i = 0; i < 6; i++)
+        set_display(i, initial_values[i]);
 
     int col = 0;
     int row = 0;
@@ -248,7 +250,7 @@ int main(int argc, char const *argv[])
             col = new_col;
             row = new_row;
         }
-        
+
         int pressed = button_press();
 
         if (!winner)
@@ -260,7 +262,6 @@ int main(int argc, char const *argv[])
                 {
                     board[col][row] = current_player;  
 
-                    winner = 0;
                     winner = check_winner();
                     if (winner == 0)
                     {
@@ -271,9 +272,6 @@ int main(int argc, char const *argv[])
                     else if (winner == 2)
                         O_score++;
                        
-                
-                    
-
                     state_updated = 1;
                 }
             }
@@ -287,20 +285,18 @@ int main(int argc, char const *argv[])
                 state_updated = 1;
             }
         }
-
+        
         //redraw the screen when game state has been updated
         if (state_updated) 
         {
             update_screen(col, row);
 
-            set_displays(0, O_score%10);
-            set_displays(1, O_score/10);
+            set_display(0, O_score%10);
+            set_display(1, O_score/10);
 
-            set_displays(4, X_score%10);
-            set_displays(5, X_score/10);
-            
+            set_display(4, X_score%10);
+            set_display(5, X_score/10);
         }
-        
     }
 }
 
