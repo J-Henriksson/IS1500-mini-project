@@ -22,6 +22,7 @@ extern void draw_square(int column, int row, unsigned char red,
     unsigned char green, unsigned char blue); // draw_screen.c
 extern void draw_pieces(int board[3][3], int win_cells[3][3], int winner); //draw_screen.c
 extern void draw_turn_indicator(int player); // draw_screen.c
+extern void _enable_interrupt(); // boot.s
 
 // button register
 volatile unsigned int* button = (volatile unsigned int*) 0x040000D0;
@@ -41,11 +42,30 @@ volatile unsigned char* seven_seg_base = (volatile unsigned char*) 0x04000050;
 // board[col][row], where col = x (0–2), row = y (0–2)
 int board[3][3];
 int win_cells[3][3]; // tracks cells involved in a win
-int current_player = PLAYER_O;
+int current_player = PLAYER_X;
 int winner;     // 0 = none, 1 = X, 2 = O, 3 = draw
 int X_score = 0;
 int O_score = 0;
 
+//curent selected position
+int col = 0;
+int row = 0;
+
+//timer control registers
+volatile unsigned int* timer_status  = (volatile unsigned int*) 0x04000020;
+volatile unsigned int* timer_control = (volatile unsigned int*) 0x04000024;
+volatile unsigned int* timer_periodl = (volatile unsigned int*) 0x04000028;
+volatile unsigned int* timer_periodh = (volatile unsigned int*) 0x0400002C;
+
+void timer_init() {
+  // write 499 999 to the period register (60Hz - 1 extra cycle)
+   *timer_periodl = 0xA11F; // lower 16 bits
+   *timer_periodh = 0x0007; // upper 16 bits
+  
+   *timer_control = 0x0007; // START, CONT, ITO to 1, others to 0
+
+   _enable_interrupt();
+}
 
 // Rising-edge detector on button 1
 int button_press()
@@ -226,6 +246,8 @@ void set_display(int display_number, int value)
 // Main game loop
 int main(int argc, char const *argv[])
 {
+    _enable_interrupt();
+    timer_init();
     // Initialize drawing and game state
     draw_init();
     game_init();
@@ -235,10 +257,16 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < 6; i++)
         set_display(i, initial_values[i]);
 
-    int col = 0;
-    int row = 0;
     while(1) 
+    {}
+}
+
+void handle_interrupt(unsigned cause)
+{
+    if (cause == 16) 
     {
+        *timer_status  = 0x0;   // clear TO
+        
         int state_updated = 0;
 
         int new_col = 0;
@@ -299,7 +327,3 @@ int main(int argc, char const *argv[])
         }
     }
 }
-
-// empty handle_interrupt
-void handle_interrupt()
-{}
